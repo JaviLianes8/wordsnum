@@ -4,7 +4,19 @@ import wordsnum
 
 # The public API. Add every exported name here as the library grows; this list is the
 # contract and the test below fails if the module and this list disagree.
-PUBLIC_API: list[str] = ["WordsNumError", "words_to_num"]
+PUBLIC_API: list[str] = [
+    "Kind",
+    "MisplacedWordError",
+    "ParsedNumber",
+    "UnknownWordError",
+    "WordsNumError",
+    "find_numbers",
+    "num_to_words",
+    "parse",
+    "words_to_decimal",
+    "words_to_fraction",
+    "words_to_num",
+]
 
 
 def test_all_lists_exactly_the_public_api() -> None:
