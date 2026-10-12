@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wordsnum"
-version = "0.1.0"
+version = "0.2.0"
 description = "Parse spelled-out English numbers into int or float, fully typed and dependency-free"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,6 +22,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "pytest", "build", "twine"]
+
+[project.scripts]
+wordsnum = "wordsnum._cli:main"
 
 [project.urls]
 Homepage = "https://lianes8studio.com"
