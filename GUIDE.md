@@ -75,33 +75,54 @@ A numerator followed by a denominator word:
   `and` is used as a mixed number only when that fraction is proper, so
   `one hundred and one third` is 100 1/3 while `two hundred and fifty thirds` is 250/3.
 - `first` and `second` are not denominators on their own (`two seconds` is not 2/2).
+- Scale denominators read greedily as one numerator: `three hundred thousandths` is
+  300/1000 and `three hundred and fifty thousandths` is 300 and 50/1000. Compound scale
+  denominators are not supported: `three hundred-thousandths` is also read as
+  300/1000, so write 3/100000 as a decimal (`zero point zero zero zero zero three`).
 
 ## Signs and digits
 
-`minus` or `negative` may lead any cardinal, decimal or fraction. Digit groups mix with
+`minus` or `negative` may lead any cardinal, decimal or fraction, and a `-` written
+directly before leading digits is a sign too (`-5`, `-1.5 million`). Digit groups mix with
 words: `3 million`, `5 hundred`, `2,500`, `1 million two hundred`. A digit group after
-a scale must be below a thousand.
+a scale must be below a thousand, and a digit decimal (`1.5`) may only start the
+number. Digits cannot follow a word inside a group (`twenty 5` and `one hundred 5` are
+rejected). Only ASCII digits are read, and runs longer than 1000 characters are not
+treated as numbers.
 
 ## Strict and lenient
 
+Both modes accept the same grammar; they differ only in how the words may be written.
 Lenient mode, the default, ignores case, collapses whitespace and accepts hyphens and
-commas between words. Strict mode accepts only the canonical form that `num_to_words`
-writes: lowercase words, exactly one space between words, a hyphen exactly between a
-tens word and a unit word (`twenty-one`, `thirty-second`), no commas between words and
-no surrounding whitespace. Neither mode corrects spelling.
+commas between words. Strict mode checks the written form: lowercase words, exactly
+one space between words, a hyphen exactly between a tens word and a unit word
+(`twenty-one`, `thirty-second`), no commas between words, no surrounding whitespace,
+and the article that matches the sound of the next word (`a hundred`, `an eighth`).
+Everything `num_to_words` writes passes strict mode. Grammatical variants such as
+`negative five`, `hundred`, `point five`, `2,500` or `twenty-five hundred` are valid in
+both modes. Neither mode corrects spelling.
+
+Spacing matters for compound denominators: `twenty-ninths` is a plural of 1/29 while
+`twenty ninths` is 20/9, and `three thirty-seconds` (3/32) needs its hyphen in both
+modes.
 
 ## Finding numbers in text
 
 `find_numbers` scans free text, case-insensitively, and returns the longest valid
 reading at each position. Words that are also everyday words are reported as numbers:
-`no one` contains 1 and `just a second` contains the ordinal 2. Filter by `kind` or by
-context when that matters.
+`no one` contains 1 and `just a second` contains the ordinal 2. A comma-separated list
+can merge when the words also form one number (`sixty, five, four` gives 65 and 4), and
+dotted strings such as version numbers are read as decimals. Filter by `kind` or by
+context when that matters. A decimal or fraction too large for a `float` makes
+`number` raise `WordsNumError`; `value` always holds the exact result.
 
 ## Unsupported forms
 
 These are rejected rather than guessed:
 
 - `dozen`, `score`, `gross`, `half a million`, `one and a half million`.
+- Year style without `hundred`: `nineteen eighty four` (write `nineteen hundred eighty
+  four`); `find_numbers` reports it as 19 and 84.
 - Long-scale meanings (British `billion` as 10**12) and scales above vigintillion.
 - Spelling-error correction of any kind.
 - Roman numerals and other languages.
