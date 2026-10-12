@@ -6,6 +6,7 @@ from fractions import Fraction
 import pytest
 from _oracle import (
     LIMIT,
+    SCALE_NAMES,
     ordinalize,
     random_decimal,
     random_fraction,
@@ -103,3 +104,24 @@ def test_digit_groups_mixed_with_scale_words() -> None:
         name = spell(1000**power).split(" ")[1]
         assert words_to_num(f"{count:,} {name}") == count * 1000**power
         assert words_to_fraction(f"{count}.5 {name}") == (count + Fraction(1, 2)) * 1000**power
+
+
+def test_corrupted_oracle_spellings_are_rejected() -> None:
+    """Negative oracle: breaking the documented word order must never yield a number."""
+    rng = random.Random(12)
+    scales = set(SCALE_NAMES)
+    for number in _ints(12):
+        words = spell(number).split(" ")
+        present = [index for index, word in enumerate(words) if word in scales]
+        corrupted: list[list[str]] = [[*words, words[-1]] if words[-1] != "zero" else []]
+        if len(present) >= 2:
+            first, second = rng.sample(present, 2)
+            swapped = list(words)
+            swapped[first], swapped[second] = swapped[second], swapped[first]
+            if swapped != words:
+                corrupted.append(swapped)
+            corrupted.append([*words[: present[0] + 1], *words[present[0] :]])
+        for candidate in filter(None, corrupted):
+            text = " ".join(candidate)
+            with pytest.raises(ValueError):
+                parse(text)

@@ -97,7 +97,7 @@ for _ordinal, _cardinal in ORDINALS.items():
     if _ordinal not in _NOT_DENOMINATORS:
         _value = UNITS.get(_cardinal) or TENS.get(_cardinal) or SCALES.get(_cardinal, 100)
         DENOMINATORS[_ordinal] = _value
-PLURAL_DENOMINATORS: dict[str, str] = {word + "s": word for word in DENOMINATORS}
+PLURAL_DENOMINATORS: dict[str, str] = {word + "s": word for word in DENOMINATORS if word != "half"}
 PLURAL_DENOMINATORS["halves"] = "half"
 # Plural ordinal units usable only after a hyphenated tens word ("twenty-firsts").
 COMPOUND_PLURALS: dict[str, str] = {

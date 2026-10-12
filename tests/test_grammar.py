@@ -61,6 +61,8 @@ def test_valid_cardinals(text: str, expected: int) -> None:
         ("minus minus one", "minus", 6),
         ("one minus", "minus", 4),
         ("minus first", "first", 6),
+        ("minus -5", "-5", 6),
+        ("one million 1.5 thousand", "1.5", 12),
     ],
 )
 def test_misplaced_words_point_at_the_offender(text: str, word: str, start: int) -> None:
@@ -80,7 +82,7 @@ def test_misplaced_words_point_at_the_offender(text: str, word: str, start: int)
         ("fourty two", "fourty", 0),
         ("twentyone", "twentyone", 0),
         ("two & three", "&", 4),
-        ("-5", "-", 0),
+        ("- 5", "-", 0),
         ("one,", ",", 3),
         ("twenty-one-", "-", 10),
         ("22st", "22st", 0),

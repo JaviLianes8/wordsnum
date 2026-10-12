@@ -9,16 +9,19 @@ from itertools import pairwise
 from typing import NoReturn
 
 from ._errors import MisplacedWordError, UnknownWordError, WordsNumError
-from ._vocab import COMPOUND_PLURALS, ORDINALS, TENS, UNITS, VOCABULARY
+from ._vocab import ARTICLES, COMPOUND_PLURALS, ORDINALS, TENS, UNITS, VOCABULARY
 
 _TOKEN = re.compile(
-    r"\d{1,3}(?:,\d{3})+(?:\.\d+)?"  # 2,500 or 1,234.5
-    r"|\d+(?:\.\d+)?(?:st|nd|rd|th)?"  # 42, 3.14, 21st
+    r"(?:(?<![^\s(])-)?"  # a minus sign glued to digits at the start of a word: -5
+    r"(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?"  # 2,500 or 1,234.5
+    r"|\d+(?:\.\d+)?(?:st|nd|rd|th)?)"  # 42, 3.14, 21st
     r"|[A-Za-z]+",
-    re.IGNORECASE,
+    re.IGNORECASE | re.ASCII,
 )
-_DIGITS = re.compile(r"[\d,]+(?:\.\d+)?")
-_ORDINAL_DIGITS = re.compile(r"(\d+)(st|nd|rd|th)")
+_DIGITS = re.compile(r"-?[\d,]+(?:\.\d+)?", re.ASCII)
+# Longer digit runs are not numbers anyone writes, and Python refuses to convert them.
+MAX_DIGITS = 1000
+_ORDINAL_DIGITS = re.compile(r"(\d+)(st|nd|rd|th)", re.ASCII)
 _LENIENT_GAP = re.compile(r"[\s,\-]*")
 _LENIENT_EDGE = re.compile(r"\s*")
 
@@ -36,7 +39,7 @@ class Token:
     @property
     def number(self) -> Fraction | None:
         """The value of a plain digit token such as ``2,500`` or ``1.5``, else ``None``."""
-        if _DIGITS.fullmatch(self.word) is None:
+        if len(self.word) > MAX_DIGITS or _DIGITS.fullmatch(self.word) is None:
             return None
         return Fraction(self.word.replace(",", ""))
 
@@ -44,7 +47,7 @@ class Token:
     def digit_ordinal(self) -> int | None:
         """The value of a digit ordinal with the right suffix (``21st``), else ``None``."""
         match = _ORDINAL_DIGITS.fullmatch(self.word)
-        if match is None:
+        if match is None or len(self.word) > MAX_DIGITS:
             return None
         value = int(match.group(1))
         return value if match.group(2) == _suffix(value) else None
@@ -103,9 +106,13 @@ def tokenize(text: str, *, strict: bool) -> list[Token]:
     for left, right in pairwise(tokens):
         _check_gap(text, left, right, strict=strict)
     if strict:
-        for token in tokens:
+        for token, following in zip(tokens, [*tokens[1:], None], strict=True):
             if token.raw != token.word:
                 _misplaced(token, "strict mode needs lowercase words")
+            if token.word in ARTICLES and following is not None:
+                article = "an" if following.word[0] in "aeiou" else "a"
+                if token.word != article:
+                    _misplaced(token, f"strict mode needs {article!r} before {following.raw!r}")
     return tokens
 
 

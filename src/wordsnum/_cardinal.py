@@ -107,6 +107,8 @@ def _group(reader: _Reader, *, first: bool) -> tuple[Fraction, bool]:
     if number is not None:
         reader.take()
         if "." in token.word:
+            if not first:
+                fail(token, "digits with a decimal point must start the number")
             reader.decimal = True
             after = reader.peek()
             if after is not None and after.word not in SCALES:

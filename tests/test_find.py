@@ -67,3 +67,14 @@ def test_a_hostile_run_of_number_words_finishes() -> None:
     text = " ".join(["one", "and"] * 3000)
     matches = find_numbers(text)
     assert len(matches) == 3000
+
+
+def test_negative_digits_keep_their_sign() -> None:
+    assert _summary("it was -5 degrees, then (-3.5)") == [
+        ("-5", -5, "cardinal"),
+        ("-3.5", -3.5, "decimal"),
+    ]
+
+
+def test_absurdly_long_digit_runs_and_non_ascii_digits_are_skipped() -> None:
+    assert find_numbers("x " + "1" * 5000 + " y \u0663\u0664 z") == []

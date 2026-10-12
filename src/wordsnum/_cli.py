@@ -82,7 +82,7 @@ def _value(match: ParsedNumber, *, exact: bool) -> str:
 
 def _record(match: ParsedNumber, *, exact: bool) -> dict[str, object]:
     return {
-        "value": _value(match, exact=exact) if exact else match.number,
+        "value": match.number,
         "exact": _value(match, exact=True),
         "kind": match.kind,
         "text": match.text,

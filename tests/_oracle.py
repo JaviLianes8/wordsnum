@@ -152,7 +152,8 @@ def random_fraction(rng: random.Random) -> tuple[str, Fraction]:
     singular, plural = denominator_words(den)
     num = rng.randrange(0, 3 * den)
     if num == 1:
-        lead = "a" if den >= 100 else rng.choice(["a", "one"])
+        article = "an" if singular[0] in "aeiou" else "a"  # by sound: "an eighth"
+        lead = article if den >= 100 else rng.choice([article, "one"])
         text, value = f"{lead} {singular}", Fraction(1, den)
     else:
         text, value = f"{spell(num)} {plural}", Fraction(num, den)

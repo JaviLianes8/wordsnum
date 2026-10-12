@@ -134,3 +134,24 @@ def test_return_types() -> None:
     assert type(words_to_num("twenty-first")) is int
     assert type(words_to_num("one point zero")) is float
     assert type(words_to_num("a half")) is float
+
+
+def test_a_leading_minus_on_digits_is_a_sign() -> None:
+    assert words_to_num("-5") == -5
+    assert words_to_num("-1.5 million") == -1_500_000.0
+    assert words_to_num("-2,500") == -2500
+
+
+def test_halves_is_the_only_plural_of_half() -> None:
+    assert words_to_num("two halves") == 1.0
+    with pytest.raises(ValueError):
+        words_to_num("two halfs")
+
+
+def test_values_too_large_for_a_float_raise_a_words_num_error() -> None:
+    from wordsnum import WordsNumError
+
+    huge = "9" * 300 + ".5 vigintillion"
+    with pytest.raises(WordsNumError, match="too large"):
+        words_to_num(huge)
+    assert words_to_fraction(huge) == (Fraction("9" * 300) + Fraction(1, 2)) * 10**63

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
 
+from ._errors import WordsNumError
 from ._forms import Kind
 
 
@@ -36,10 +37,19 @@ class ParsedNumber:
 
         An ``int`` for cardinals and ordinals, a ``float`` for decimals and fractions
         (even when the value is whole, such as ``"four halves"``).
+
+        Raises:
+            WordsNumError: A decimal or fraction is too large for a ``float``.
         """
         if self.kind in ("cardinal", "ordinal"):
             return int(self.value)
-        return self.value.numerator / self.value.denominator
+        try:
+            return self.value.numerator / self.value.denominator
+        except OverflowError:
+            raise WordsNumError(
+                f"{self.text[:40]!r} is too large for a float; use words_to_fraction or "
+                "words_to_decimal for the exact value"
+            ) from None
 
     def to_decimal(self) -> Decimal:
         """The value as a ``Decimal``.

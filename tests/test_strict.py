@@ -75,3 +75,12 @@ def test_lenient_tolerates_spacing_case_hyphens_and_commas(text: str, expected: 
 def test_lenient_still_rejects_other_punctuation(text: str) -> None:
     with pytest.raises(UnknownWordError):
         words_to_num(text)
+
+
+@pytest.mark.parametrize(("text", "word"), [("a eighth", "a"), ("an hundred", "an")])
+def test_strict_checks_the_article(text: str, word: str) -> None:
+    with pytest.raises(MisplacedWordError) as caught:
+        parse(text, strict=True)
+    assert caught.value.word == word
+    parse(text)
+    assert parse("an eighth", strict=True).value == parse("a eighth").value

@@ -34,13 +34,17 @@ _SCALE_ORDINALS |= {"hundredth"}
 def parse_tokens(tokens: Sequence[Token]) -> tuple[Fraction, Kind]:
     """Parse one complete number from a non-empty token list."""
     sign = 1
-    if tokens[0].word in SIGNS:
+    if tokens[0].word.startswith("-"):
+        first = tokens[0]
+        unsigned = replace(first, word=first.word[1:], raw=first.raw[1:], start=first.start + 1)
+        sign, tokens = -1, [unsigned, *tokens[1:]]
+    elif tokens[0].word in SIGNS:
         if len(tokens) == 1:
             fail(tokens[0], "a sign word needs a number after it")
         sign, tokens = -1, tokens[1:]
     for token in tokens:
-        if token.word in SIGNS:
-            fail(token, "a sign word can only come first")
+        if token.word in SIGNS or token.word.startswith("-"):
+            fail(token, "a sign can only come first")
     value, kind = _unsigned(tokens)
     if sign < 0 and kind == "ordinal":
         fail(tokens[0], "an ordinal cannot be negative")
