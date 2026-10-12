@@ -8,6 +8,7 @@ from ._errors import WordsNumError
 from ._forms import parse_tokens
 from ._result import ParsedNumber
 from ._tokens import Token, gap_ok, scan
+from ._vocab import COMPOUND_PLURALS, DENOMINATORS, ORDINALS, PLURAL_DENOMINATORS
 
 # No real number phrase is longer than this; the cap bounds the work on hostile input.
 _MAX_TOKENS = 160
@@ -58,7 +59,7 @@ def _matches(text: str, run: Sequence[Token]) -> list[ParsedNumber]:
     found: list[ParsedNumber] = []
     start = 0
     while start < len(run):
-        end = min(len(run), start + _MAX_TOKENS)
+        end = _window_end(run, start)
         while end > start:
             try:
                 value, kind = parse_tokens(run[start:end])
@@ -77,11 +78,31 @@ def _matches(text: str, run: Sequence[Token]) -> list[ParsedNumber]:
 def _shorter(run: Sequence[Token], start: int, end: int, error: WordsNumError) -> int:
     """Pick the next, shorter candidate end after a failed parse.
 
-    Everything after the offending word is dropped at once, but the offending word
-    itself is kept for one more try, since as the last word it may read differently
-    ("one third" is a fraction, while "one third two" fails at "third").
+    Words after the offending one are dropped at once. The offending word itself is
+    kept for one more try, because as the last word it may read differently.
     """
     for index in range(start, end - 1):
         if run[index].start == error.start:
             return index + 1
     return end - 1
+
+
+def _window_end(run: Sequence[Token], start: int) -> int:
+    """The furthest candidate end from ``start``.
+
+    Ordinals, denominators and digit ordinals can only be the last word of a number,
+    so a candidate never extends past the first of them. This keeps the scan linear
+    even on long runs of such words.
+    """
+    limit = min(len(run), start + _MAX_TOKENS)
+    for index in range(start, limit):
+        if _decides_form(run[index]):
+            return index + 1
+    return limit
+
+
+def _decides_form(token: Token) -> bool:
+    word = token.word
+    if word in ORDINALS or word in DENOMINATORS or word in PLURAL_DENOMINATORS:
+        return True
+    return word in COMPOUND_PLURALS or token.digit_ordinal is not None

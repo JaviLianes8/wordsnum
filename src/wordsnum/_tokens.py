@@ -122,18 +122,13 @@ def _check_gap(text: str, left: Token, right: Token, *, strict: bool) -> None:
         if _LENIENT_GAP.fullmatch(gap) is None:
             _stray(gap, left.end)
         return
-    joins_tens = left.word in TENS and 1 <= UNITS.get(_unit_part(right.word), 0) <= 9
-    if gap == "-" and joins_tens:
-        return
-    if gap == " " and not joins_tens:
+    if left.word in TENS and right.word in COMPOUND_PLURALS and gap in (" ", "-"):
+        return  # "twenty ninths" is 20/9 and "twenty-ninths" is a plural 1/29: both valid
+    joins_tens = left.word in TENS and 1 <= UNITS.get(ORDINALS.get(right.word, right.word), 0) <= 9
+    if gap == ("-" if joins_tens else " "):
         return
     expected = "a hyphen" if joins_tens else "a single space"
     _misplaced(right, f"strict mode needs {expected} before {right.raw!r}")
-
-
-def _unit_part(word: str) -> str:
-    word = COMPOUND_PLURALS.get(word, word)
-    return ORDINALS.get(word, word)
 
 
 def _stray(gap: str, offset: int) -> NoReturn:
