@@ -6,6 +6,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0]
+
+- Replace the word-summing parser with a real grammar. Malformed input such as
+  "one two" or "thousand million" is now rejected instead of producing a number.
+- Scales up to vigintillion (10**63), with ordinal forms.
+- Fractions ("three quarters", "a half", "seven hundredths", "three thirty-seconds")
+  and mixed numbers ("two and three quarters").
+- Decimals with a final scale word ("two point five million") and "oh" after "point".
+- Digit groups mixed with words ("3 million", "2,500", "1.5 billion", "21st").
+- `parse` returns a `ParsedNumber` with the exact value, kind and source span.
+- `words_to_fraction` and `words_to_decimal` return exact results.
+- `find_numbers` finds every number inside free text.
+- `num_to_words` spells integers in the canonical form, round-tripping with the parser.
+- `strict=True` accepts only the canonical spelling.
+- Typed errors `UnknownWordError` and `MisplacedWordError` carry `word`, `start` and `end`.
+- The `wordsnum` command line tool: `parse`, `find` and `say`.
+- GUIDE.md documents the full grammar and the unsupported forms.
+
 ## [0.1.0]
 
 - First release.

@@ -13,33 +13,96 @@ pip install wordsnum
 ```python
 from wordsnum import words_to_num
 
-words_to_num("two hundred fifty")              # 250
-words_to_num("one thousand two hundred thirty four")  # 1234
-words_to_num("twenty-one")                     # 21
-words_to_num("one hundred and one")            # 101
-words_to_num("a hundred")                      # 100
-words_to_num("minus forty two")                # -42
-words_to_num("three point one four")           # 3.14
-words_to_num("twenty-first")                   # 21 (ordinals)
-words_to_num("two million three hundred thousand")   # 2300000
+words_to_num("two hundred fifty")  # 250
+words_to_num("two thousand and twenty-one")  # 2021
+words_to_num("nineteen hundred eighty four")  # 1984
+words_to_num("a hundred")  # 100
+words_to_num("minus forty two")  # -42
+words_to_num("twenty-first")  # 21 (ordinals)
+words_to_num("three point one four")  # 3.14
+words_to_num("two point five million")  # 2500000.0
+words_to_num("two and three quarters")  # 2.75
+words_to_num("3 million")  # 3000000
+words_to_num("one decillion")  # 10**33
 ```
 
-Integers come back as `int`, anything with a decimal part as `float`. Unparseable
-text raises `WordsNumError` with a message that names the offending word:
+Cardinals and ordinals come back as `int`; decimals and fractions as `float`.
+
+### Exact values, kinds and spans
 
 ```python
-from wordsnum import WordsNumError, words_to_num
+from wordsnum import parse, words_to_decimal, words_to_fraction
+
+words_to_fraction("two thirds")  # Fraction(2, 3)
+words_to_decimal("one point one")  # Decimal('1.1')
+
+result = parse("  Seven Hundredths ")
+result.value  # Fraction(7, 100)
+result.kind  # 'fraction'  (also 'cardinal', 'ordinal', 'decimal')
+result.text, result.start, result.end  # ('Seven Hundredths', 2, 18)
+```
+
+### Numbers inside text
+
+```python
+from wordsnum import find_numbers
+
+for match in find_numbers("We sold twenty-one boxes, then 3 million more."):
+    print(match.start, match.end, match.number, match.text)
+# 8 18 21 twenty-one
+# 31 40 3000000 3 million
+```
+
+### Spelling integers
+
+```python
+from wordsnum import num_to_words
+
+num_to_words(1234)  # 'one thousand two hundred thirty-four'
+num_to_words(1005, british=True)  # 'one thousand and five'
+num_to_words(21, ordinal=True)  # 'twenty-first'
+```
+
+`num_to_words` writes exactly the canonical form that strict parsing accepts, so the
+two directions round-trip.
+
+### Strict and lenient
+
+By default case, extra spaces, hyphens and commas are tolerated. `strict=True` accepts
+only the canonical spelling (lowercase, single spaces, `twenty-one` hyphenated, no
+commas). Neither mode guesses typos: `"fourty"` is always an error.
+
+### Errors that point at the problem
+
+```python
+from wordsnum import MisplacedWordError, UnknownWordError, words_to_num
 
 try:
     words_to_num("two hundred banana")
-except WordsNumError as error:
-    print(error)  # unexpected word: 'banana'
+except UnknownWordError as error:
+    print(error.word, error.start, error.end)  # banana 12 18
+
+try:
+    words_to_num("one thousand one million")
+except MisplacedWordError as error:
+    print(error)  # scale words must get smaller from left to right: 'million' at position 17
 ```
 
-Supported: units, teens, tens, hundreds, and scales up to trillion; "and" fillers;
-hyphenated words ("twenty-one"); the articles "a" and "an" before a scale; ordinals
-("first", "twelfth", "hundredth"); negatives ("minus", "negative"); and decimals
-read digit by digit after "point".
+Both subclass `WordsNumError`, which subclasses `ValueError`.
+
+## Command line
+
+```
+wordsnum parse two thousand and twenty-one        # 2021
+wordsnum parse three quarters --exact             # 3/4
+echo "minus forty two" | wordsnum parse           # -42
+echo "I owe you twenty-one pounds" | wordsnum find
+wordsnum say 21 --ordinal                         # twenty-first
+```
+
+Run `wordsnum --help` for every option. Errors go to stderr with exit status 1.
+
+See [GUIDE.md](GUIDE.md) for the full grammar and the list of unsupported forms.
 
 ## Why
 
@@ -50,9 +113,8 @@ untyped, and returns strings rather than numbers. `text2num` is maintained but b
 on a Rust extension, which is a heavy dependency for a small parsing job.
 
 `wordsnum` is a small, pure-Python parser with zero runtime dependencies, a `py.typed`
-marker, a clean `mypy --strict` build, and a single obvious entry point that returns a
-native `int` or `float`. (Spelling numbers out in the other direction is already well
-served by `num2words`, so this library does not attempt it.)
+marker, a clean `mypy --strict` build, a real grammar that rejects malformed input
+instead of summing words, and exact results when you need them.
 
 ## License
 
